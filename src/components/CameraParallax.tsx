@@ -49,6 +49,16 @@ interface CameraParallaxProps {
    */
   maxPullback: number;
   /**
+   * How far to slide the whole shot sideways per unit of narrowness, in
+   * scene units. Negative pans left.
+   *
+   * Retreating on its own doesn't save a narrow screen, because the shot
+   * isn't centred on the composition — it's aimed at the room, and the
+   * name sits entirely to the left of that. Backing up symmetrically just
+   * grows a frame the name is still outside of.
+   */
+  aimShiftX: number;
+  /**
    * Shared 0–1 "trauma" value. Impacts add to it; this component is the
    * only thing that subtracts from it.
    *
@@ -69,6 +79,7 @@ export default function CameraParallax({
   damping,
   designAspect,
   maxPullback,
+  aimShiftX,
   traumaRef,
 }: CameraParallaxProps) {
   const { camera, pointer } = useThree();
@@ -144,7 +155,20 @@ export default function CameraParallax({
      */
     const pullback = clamp(designAspect / perspective.aspect, 1, maxPullback);
 
-    base.x += (lookAt[0] + (targetX - lookAt[0]) * pullback - base.x) * t;
+    /**
+     * How far past the design shape this window is: 0 when it's wide
+     * enough, growing as it narrows. Drives the sideways pan as well.
+     *
+     * The pan moves the camera *and* the aim point by the same amount —
+     * a lateral dolly, not a swivel. Shifting only the aim would rotate
+     * the shot and change every angle in the composition; moving both
+     * keeps the framing identical and simply slides it across, which is
+     * far easier to reason about and to tune.
+     */
+    const panX = (pullback - 1) * aimShiftX;
+
+    base.x +=
+      (lookAt[0] + (targetX - lookAt[0]) * pullback + panX - base.x) * t;
     // Lerp toward the target each frame instead of snapping straight to
     // it — this is what makes the movement feel like an eased drift
     // rather than the camera rigidly tracking the cursor. It doubles as
@@ -155,7 +179,7 @@ export default function CameraParallax({
     base.z +=
       (lookAt[2] + (basePosition[2] - lookAt[2]) * pullback - base.z) * t;
 
-    aim.x += (lookAt[0] - aim.x) * t;
+    aim.x += (lookAt[0] + panX - aim.x) * t;
     aim.y += (lookAt[1] - aim.y) * t;
     aim.z += (lookAt[2] - aim.z) * t;
 

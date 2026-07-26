@@ -180,6 +180,7 @@ export default function Scene3D({ station }: Scene3DProps) {
           damping={parallax.damping}
           designAspect={responsive.designAspect}
           maxPullback={responsive.maxPullback}
+          aimShiftX={responsive.aimShiftX}
           traumaRef={traumaRef}
         />
         <color attach="background" args={[lights.background]} />

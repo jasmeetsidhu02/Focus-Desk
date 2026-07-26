@@ -40,7 +40,13 @@ export function useSceneControls() {
     designAspect: { value: 1.6, min: 0.5, max: 3, step: 0.05 },
     // Ceiling on that retreat. A portrait phone would otherwise ask for
     // ~3.5x and end up viewing the room from across the street.
-    maxPullback: { value: 2.1, min: 1, max: 4, step: 0.05 },
+    maxPullback: { value: 2.6, min: 1, max: 4, step: 0.05 },
+    // Slides the whole shot sideways as the window narrows. Negative pans
+    // left, toward the name — which sits entirely left of the point the
+    // camera aims at, and so is the first thing to fall out of frame.
+    // Drag this while the browser is narrow to find the balance between
+    // showing all of the name and keeping the room in shot.
+    aimShiftX: { value: -1.1, min: -4, max: 4, step: 0.05 },
   });
 
   const lights = useControls("Lights", {
