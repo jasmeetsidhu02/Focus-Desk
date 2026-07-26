@@ -5,6 +5,10 @@
   z-index: 30;
   display: flex;
   gap: 8px;
+  /* Four items now rather than three — on a narrow viewport they wrap up
+     the left edge instead of running off the right of the screen. */
+  flex-wrap: wrap;
+  max-width: calc(100vw - 56px);
 }
 
 .page-nav__button {

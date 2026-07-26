@@ -1,7 +1,13 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { CONTACT, EXPERIENCE, PROJECTS } from "../data/portfolio";
 import "./SidePanel.css";
 
-export type PanelId = "about" | "projects" | "contact" | null;
+export type PanelId =
+  | "about"
+  | "experience"
+  | "projects"
+  | "contact"
+  | null;
 
 interface SidePanelProps {
   activePanel: PanelId;
@@ -12,6 +18,107 @@ interface SidePanelProps {
 // custom property, so the JS timing and the CSS transition can't drift
 // apart the way two hardcoded numbers would.
 const PANEL_TRANSITION_MS = 1000;
+
+/** Shared by both list sections — same visual treatment, different source. */
+function TagRow({ tags }: { tags: string[] }) {
+  return (
+    <ul className="entry__tags">
+      {tags.map((tag) => (
+        <li key={tag} className="entry__tag">
+          {tag}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ExperienceList() {
+  return (
+    <ol className="entry-list">
+      {EXPERIENCE.map((role) => (
+        <li key={role.company} className="entry">
+          <span
+            className={`entry__period ${
+              role.current ? "entry__period--current" : ""
+            }`}
+          >
+            {role.period}
+          </span>
+          <h3 className="entry__title">{role.company}</h3>
+          <p className="entry__meta">
+            {role.role} · {role.location}
+          </p>
+          <ul className="entry__points">
+            {role.highlights.map((highlight) => (
+              <li key={highlight}>{highlight}</li>
+            ))}
+          </ul>
+          <TagRow tags={role.tags} />
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ProjectList() {
+  return (
+    <ol className="entry-list">
+      {PROJECTS.map((project) => (
+        <li key={project.id} className="entry">
+          <h3 className="entry__title">{project.title}</h3>
+          <p className="entry__meta">{project.description}</p>
+          <ul className="entry__points">
+            {project.highlights.map((highlight) => (
+              <li key={highlight}>{highlight}</li>
+            ))}
+          </ul>
+          <TagRow tags={project.tags} />
+          {project.liveUrl && (
+            <a
+              className="entry__link"
+              href={project.liveUrl}
+              // Leaving the page would tear down the whole scene — and
+              // noopener stops the opened tab reaching back via
+              // window.opener.
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Visit site ↗
+            </a>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ContactList() {
+  return (
+    <>
+      <p className="panel-blurb">{CONTACT.blurb}</p>
+      <ul className="contact-list">
+        <li className="contact-list__row">
+          <span className="contact-list__label">Email</span>
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
+        </li>
+        <li className="contact-list__row">
+          <span className="contact-list__label">Phone</span>
+          <a href={CONTACT.phone.link}>{CONTACT.phone.display}</a>
+        </li>
+        {CONTACT.socials.map((social) => (
+          <li key={social.name} className="contact-list__row">
+            <span className="contact-list__label">{social.name}</span>
+            <a href={social.href} target="_blank" rel="noopener noreferrer">
+              {/* The bare handle reads better than the full URL in a
+                  380px-wide panel. */}
+              {social.href.replace(/^https:\/\/(www\.)?/, "").replace(/\/$/, "")}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
 
 const PANEL_CONTENT: Record<
   Exclude<PanelId, null>,
@@ -28,30 +135,9 @@ const PANEL_CONTENT: Record<
       </p>
     ),
   },
-  projects: {
-    title: "Projects",
-    body: (
-      <ul>
-        <li>
-          <strong>Focus Desk</strong> — this scene: an interactive 3D
-          portfolio built with React, TypeScript, React Three Fiber, and
-          Redux Toolkit.
-        </li>
-        <li>{/* TODO: add another real project here */}</li>
-      </ul>
-    ),
-  },
-  contact: {
-    title: "Contact",
-    body: (
-      <p>
-        {/* TODO: confirm/replace contact details */}
-        Email: <a href="mailto:jasmeetai02@gmail.com">jasmeetai02@gmail.com</a>
-        <br />
-        GitHub: <a href="https://github.com/jasmeetsidhu02">jasmeetsidhu02</a>
-      </p>
-    ),
-  },
+  experience: { title: "Experience", body: <ExperienceList /> },
+  projects: { title: "Projects", body: <ProjectList /> },
+  contact: { title: "Contact", body: <ContactList /> },
 };
 
 export default function SidePanel({ activePanel, onClose }: SidePanelProps) {
