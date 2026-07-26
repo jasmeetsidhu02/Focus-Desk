@@ -1,13 +1,23 @@
 import { Leva } from "leva";
-import { useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 // import MoodMeter from "./components/MoodMeter";
 import PageNav from "./components/PageNav";
 import Scene3D from "./components/Scene3D";
-import SidePanel, { type PanelId } from "./components/SidePanel";
+import SidePanel from "./components/SidePanel";
+import { sectionForPath, stationForPath } from "./data/navigation";
 import "./App.css";
 
 function App() {
-  const [activePanel, setActivePanel] = useState<PanelId>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  /**
+   * The URL is the state now — there's no `activePanel` useState any more.
+   * Which section is open, which nav item is lit, and where the camera
+   * stands are all derived from one string, so they can't disagree.
+   */
+  const section = sectionForPath(location.pathname);
+  const station = stationForPath(location.pathname);
 
   return (
     <>
@@ -17,20 +27,26 @@ function App() {
           their defaults, they just aren't adjustable. */}
       <Leva hidden={!import.meta.env.DEV} collapsed />
 
-      <div
-        className={`scene-layer ${activePanel ? "scene-layer--dimmed" : ""}`}
-      >
-        <Scene3D />
+      {/* Scene3D sits *outside* any route-switched subtree on purpose.
+          The room is ~18MB of GLB and the physics world holds live state;
+          rendering it inside a <Routes> would tear down the WebGL context
+          and reload every model on each navigation. Routes move the
+          camera instead — nothing about the scene remounts. */}
+      <div className={`scene-layer ${section ? "scene-layer--dimmed" : ""}`}>
+        <Scene3D station={station} />
       </div>
+
       {/* Also outside .scene-layer, for the same reason as <Leva> above:
           it's chrome sitting *over* the scene, so it shouldn't be blurred
           along with it when a panel opens. */}
       {/* <MoodMeter /> */}
-      <PageNav activePanel={activePanel} onSelect={setActivePanel} />
-      <SidePanel
-        activePanel={activePanel}
-        onClose={() => setActivePanel(null)}
-      />
+      <PageNav activeSection={section} />
+
+      {/* Note this isn't route-switched either. SidePanel animates itself
+          shut over ~1s and needs to stay mounted (with its old content)
+          for the whole slide-out; a <Route> would unmount it the instant
+          the URL changed and the panel would vanish rather than leave. */}
+      <SidePanel activePanel={section} onClose={() => navigate("/")} />
     </>
   );
 }

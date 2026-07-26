@@ -241,6 +241,58 @@
   border-bottom-color: #b9a6ff;
 }
 
+/* --- About / skills --------------------------------------------------- */
+
+.about__role {
+  margin: 0;
+  font-size: 15px;
+  color: #b9a6ff;
+  letter-spacing: 0.01em;
+}
+
+.about__location {
+  margin: 4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(235, 232, 238, 0.42);
+}
+
+/* The bio directly follows the location line, so it needs more space above
+   it than the default blurb margin gives. */
+.about__location + .panel-blurb {
+  margin-top: 18px;
+}
+
+.skills {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.skills__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skills__heading {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(235, 232, 238, 0.45);
+}
+
+/* TagRow's default top margin is tuned for sitting under an entry's
+   bullets; here the heading already provides the gap. */
+.skills__group .entry__tags {
+  margin-top: 0;
+}
+
 /* --- Contact ---------------------------------------------------------- */
 
 .panel-blurb {

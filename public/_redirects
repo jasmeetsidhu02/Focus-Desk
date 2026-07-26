@@ -1,0 +1,10 @@
+# Netlify SPA fallback.
+#
+# BrowserRouter puts real paths in the URL (/projects, /contact). Those
+# paths don't exist as files on disk, so without this rule Netlify returns
+# its own 404 for anyone who deep-links or hits refresh on one — the app
+# would only ever work if you entered through "/".
+#
+# 200, not 301: serve index.html *at the requested URL* rather than
+# redirecting to "/", so the router still sees the path the user asked for.
+/*  /index.html  200

@@ -44,14 +44,13 @@ interface FallenLettersProps {
   onReturnComplete: () => void;
   /**
    * Fired once per letter, the first time it hits something hard enough to
-   * count. `speed` is how fast it was travelling on contact, so the caller
-   * can scale the reaction to the severity of the landing.
+   * count, with the world-space point it landed at.
+   *
+   * The impact speed stays inside this component — it's only used here to
+   * decide whether a contact counts as a landing at all, and no caller
+   * scales anything by it any more.
    */
-  onImpact: (
-    letter: FallenLetter,
-    position: [number, number, number],
-    speed: number,
-  ) => void;
+  onImpact: (position: [number, number, number]) => void;
 }
 
 export default function FallenLetters({
@@ -156,11 +155,7 @@ export default function FallenLetters({
     impacted.current.add(letter.id);
 
     const translation = body.translation();
-    onImpact(
-      letter,
-      [translation.x, translation.y, translation.z],
-      speed,
-    );
+    onImpact([translation.x, translation.y, translation.z]);
   };
 
   return (

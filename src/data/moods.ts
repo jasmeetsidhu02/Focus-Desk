@@ -17,7 +17,14 @@ export interface Mood {
   reactions: string[];
   /** Meter fill colour — cool and calm through to angry red. */
   color: string;
-  /** Multiplier on the camera shake an impact produces at this tier. */
+  /**
+   * Multiplier on the camera shake produced when a letter is knocked
+   * loose at this tier. 1 is the base jolt, 2 is twice as violent.
+   *
+   * Careful with 0 — it's a bare multiplier, so a single zero switches
+   * shake off entirely for that tier rather than just flattening the
+   * escalation.
+   */
   shake: number;
 }
 
@@ -28,7 +35,7 @@ export const MOODS: Mood[] = [
     face: "🙂",
     reactions: ["😮", "🙃", "😯"],
     color: "#8fb6ff",
-    shake: 0,
+    shake: 1,
   },
   {
     threshold: 1,
@@ -36,7 +43,7 @@ export const MOODS: Mood[] = [
     face: "😐",
     reactions: ["😐", "😑", "🫠"],
     color: "#b9a6ff",
-    shake: 0,
+    shake: 1,
   },
   {
     threshold: 3,
@@ -44,7 +51,7 @@ export const MOODS: Mood[] = [
     face: "😒",
     reactions: ["😒", "🙄", "😬"],
     color: "#e0a3ff",
-    shake: 0,
+    shake: 1.5,
   },
   {
     threshold: 5,
@@ -52,7 +59,7 @@ export const MOODS: Mood[] = [
     face: "😟",
     reactions: ["😟", "😨", "😵‍💫"],
     color: "#ffb37a",
-    shake: 0
+    shake: 1.5,
   },
   {
     threshold: 8,
@@ -60,7 +67,7 @@ export const MOODS: Mood[] = [
     face: "😠",
     reactions: ["😠", "💢", "😤"],
     color: "#ff8a5c",
-    shake: 0,
+    shake: 2,
   },
   {
     threshold: 12,
@@ -68,7 +75,7 @@ export const MOODS: Mood[] = [
     face: "🤬",
     reactions: ["🤬", "💥", "🔥"],
     color: "#ff5f56",
-    shake: 0,
+    shake: 2,
   },
 ];
 

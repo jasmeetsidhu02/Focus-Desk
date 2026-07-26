@@ -69,6 +69,15 @@ export default function CameraParallax({
    */
   const eased = useRef<Vector3 | null>(null);
 
+  /**
+   * The aim point and fov get the same treatment, because a route change
+   * moves all three at once. Snapping either one while the position eased
+   * would read as the camera swinging round and *then* travelling, rather
+   * than one continuous move to the new station.
+   */
+  const easedLookAt = useRef<Vector3 | null>(null);
+  const easedFov = useRef<number | null>(null);
+
   // Mutating `camera` directly inside useFrame is the standard R3F
   // pattern for per-frame updates (avoids a React re-render every
   // frame) — the lint rule disabled below is generic React-Compiler
@@ -84,20 +93,39 @@ export default function CameraParallax({
     if (eased.current === null) {
       eased.current = new Vector3().copy(camera.position);
     }
+    if (easedLookAt.current === null) {
+      easedLookAt.current = new Vector3(lookAt[0], lookAt[1], lookAt[2]);
+    }
+    if (easedFov.current === null) {
+      easedFov.current = fov;
+    }
     const base = eased.current;
+    const aim = easedLookAt.current;
+
+    // `damping` is a fraction-per-frame, so using it raw would make the
+    // easing twice as fast on a 120Hz display as on a 60Hz one — and a
+    // route transition that changes length with the monitor is a bug you
+    // only notice on someone else's machine. This converts it to a
+    // fraction-per-second normalised against 60fps.
+    const t = 1 - Math.pow(1 - damping, delta * 60);
 
     const targetX = basePosition[0] + pointer.x * strength;
 
     // Lerp toward the target each frame instead of snapping straight to
     // it — this is what makes the movement feel like an eased drift
-    // rather than the camera rigidly tracking the cursor. y/z ease too,
-    // so dragging the debug sliders glides instead of jumping.
-    base.x += (targetX - base.x) * damping;
-    base.y += (basePosition[1] - base.y) * damping;
-    base.z += (basePosition[2] - base.z) * damping;
+    // rather than the camera rigidly tracking the cursor. It doubles as
+    // the route transition: nothing animates the camera between stations
+    // explicitly, the target simply moves and this chases it.
+    base.x += (targetX - base.x) * t;
+    base.y += (basePosition[1] - base.y) * t;
+    base.z += (basePosition[2] - base.z) * t;
+
+    aim.x += (lookAt[0] - aim.x) * t;
+    aim.y += (lookAt[1] - aim.y) * t;
+    aim.z += (lookAt[2] - aim.z) * t;
 
     camera.position.copy(base);
-    camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
+    camera.lookAt(aim.x, aim.y, aim.z);
 
     // Decay first, then apply — so trauma added this frame still shakes on
     // this frame, and a stale value can never linger once impacts stop.
@@ -118,9 +146,14 @@ export default function CameraParallax({
       camera.rotation.z += Math.sin(t * FREQ_ROLL + 0.9) * shake * SHAKE_ROLL;
     }
 
+    easedFov.current += (fov - easedFov.current) * t;
+
     const perspective = camera as PerspectiveCamera;
-    if (perspective.fov !== fov) {
-      perspective.fov = fov;
+    // Skip the last hundredth of a degree: the lerp is asymptotic and
+    // would otherwise rebuild the projection matrix forever chasing a
+    // difference nobody can see.
+    if (Math.abs(perspective.fov - easedFov.current) > 0.01) {
+      perspective.fov = easedFov.current;
       // Projection matrix is derived from fov/aspect/near/far and is only
       // recomputed on demand, so changing fov alone has no visible effect
       // until this is called.

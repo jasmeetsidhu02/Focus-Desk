@@ -4,6 +4,7 @@ import { CuboidCollider, Physics, RigidBody } from "@react-three/rapier";
 import { Suspense, useCallback, useRef, useState } from "react";
 import type { Group } from "three";
 import { ASSET_PATHS } from "../data/assets";
+import type { CameraStation } from "../data/navigation";
 import { moodFor } from "../data/moods";
 import { useSceneControls } from "../hooks/useSceneControls";
 import type { FallenLetter, ImpactBubble } from "../types";
@@ -20,24 +21,11 @@ import { calmMood, registerImpact } from "../store/sceneSlice";
 // rather than a second full set of constants to keep in sync.
 const LIGHTS_OFF_FACTOR = 0.1;
 
-// Trauma added by a landing at full force, before the mood multiplier.
-// Under 1 on purpose: a single letter shouldn't max out the camera, but a
-// flurry of them stacking up should.
-const TRAUMA_PER_IMPACT = 0.5;
-
-// The lighter jolt of the letter being knocked loose, felt on the click
-// itself rather than a beat later when it hits the floor.
-//
-// This is what guarantees *every* letter shakes the camera: a landing has
-// to clear a speed threshold to count, and a letter that only tips a few
-// centimetres onto the pile never will. The knock always fires.
-const TRAUMA_PER_KNOCK = 0.24;
-
-// The impact speed treated as "as hard as it gets" when scaling trauma.
-// Roughly what a letter reaches falling from title height.
-const REFERENCE_IMPACT_SPEED = 5;
-
-const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+// The jolt of a letter being knocked loose. This is now the *only* source
+// of camera shake — landings deliberately don't shake, so the feedback
+// lands on the click the user made rather than a beat later on a physics
+// event they weren't responsible for.
+const TRAUMA_PER_KNOCK = 0.34;
 
 const pickReaction = (reactions: string[]) =>
   reactions[Math.floor(Math.random() * reactions.length)];
@@ -49,7 +37,16 @@ const DARK_MODEL_PATHS = [
   ASSET_PATHS.DARK_FOURTH,
 ];
 
-export default function Scene3D() {
+interface Scene3DProps {
+  /**
+   * Where the camera should stand for the current route. Only the target
+   * changes here — CameraParallax eases toward it, so a route change is a
+   * camera move rather than a cut.
+   */
+  station: CameraStation;
+}
+
+export default function Scene3D({ station }: Scene3DProps) {
   const isLightsOn = useAppSelector((state) => state.scene.lightsOn);
   const moodImpacts = useAppSelector((state) => state.scene.moodImpacts);
   const dispatch = useAppDispatch();
@@ -112,28 +109,19 @@ export default function Scene3D() {
   const handleRebuild = useCallback(() => setIsReturning(true), []);
 
   /**
-   * A letter has landed. Three reactions fan out from one event:
-   * a shake (ref, per-frame), a bubble (local state, ephemeral), and the
-   * mood counter (Redux, app-wide) — each routed to the layer that matches
-   * how often it changes and who needs to read it.
+   * A letter has landed. Two reactions fan out from one event: a bubble
+   * (local state, ephemeral) and the mood counter (Redux, app-wide) —
+   * each routed to the layer that matches how often it changes and who
+   * needs to read it.
    *
-   * The second half of a two-beat shake: the knock above is the strike,
-   * this is the thump, and how far apart they land is however long the
-   * letter spent falling.
+   * Notably *not* the camera shake. Shake is feedback for an action the
+   * user took, and a landing happens a beat later, on the simulation's
+   * schedule rather than theirs — so it read as the camera twitching at
+   * random. The knock keeps it; the thump doesn't.
    */
   const handleImpact = useCallback(
-    (
-      letter: FallenLetter,
-      position: [number, number, number],
-      speed: number,
-    ) => {
+    (position: [number, number, number]) => {
       const mood = moodFor(moodImpacts);
-
-      // Scaled by how hard it hit *and* by how annoyed the scene already is,
-      // so a long drop lands heavier than a short tip onto the pile.
-      addTrauma(
-        clamp01(speed / REFERENCE_IMPACT_SPEED) * mood.shake * TRAUMA_PER_IMPACT,
-      );
 
       // Random is fine here — an event handler is not render, so this can't
       // produce a different result on a re-render the way an inline
@@ -143,16 +131,28 @@ export default function Scene3D() {
       setBubbles((current) => [...current, { id, emoji, position }]);
 
       dispatch(registerImpact());
-      // `letter` isn't needed yet — kept in the signature because the
-      // handler is the natural place to react per-character later.
-      void letter;
     },
-    [addTrauma, dispatch, moodImpacts],
+    [dispatch, moodImpacts],
   );
 
   const handleBubbleExpire = useCallback((id: number) => {
     setBubbles((current) => current.filter((bubble) => bubble.id !== id));
   }, []);
+
+  // The station is an offset, so the debug panel stays in charge of where
+  // "home" is and every route moves relative to it. Recomputed in render
+  // rather than eased here — CameraParallax owns the easing, this is only
+  // the target it chases.
+  const stationPosition: [number, number, number] = [
+    camera.position[0] + station.positionOffset[0],
+    camera.position[1] + station.positionOffset[1],
+    camera.position[2] + station.positionOffset[2],
+  ];
+  const stationLookAt: [number, number, number] = [
+    camera.lookAt[0] + station.lookAtOffset[0],
+    camera.lookAt[1] + station.lookAtOffset[1],
+    camera.lookAt[2] + station.lookAtOffset[2],
+  ];
 
   // Once the bodies have flown home, drop them — the title re-renders its
   // own letters back into those slots, already at full opacity since the
@@ -172,9 +172,9 @@ export default function Scene3D() {
     <>
       <Canvas camera={{ position: camera.position, fov: camera.fov }}>
         <CameraParallax
-          basePosition={camera.position}
-          lookAt={camera.lookAt}
-          fov={camera.fov}
+          basePosition={stationPosition}
+          lookAt={stationLookAt}
+          fov={station.fov}
           strength={parallax.strength}
           damping={parallax.damping}
           traumaRef={traumaRef}

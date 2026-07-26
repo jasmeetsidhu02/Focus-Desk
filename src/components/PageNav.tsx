@@ -1,32 +1,35 @@
-import type { PanelId } from "./SidePanel";
+import { Link } from "react-router";
+import { NAV_ROUTES, type SectionId } from "../data/navigation";
 import "./PageNav.css";
 
 interface PageNavProps {
-  activePanel: PanelId;
-  onSelect: (panel: PanelId) => void;
+  activeSection: SectionId | null;
 }
 
-const NAV_ITEMS: { id: Exclude<PanelId, null>; label: string }[] = [
-  { id: "about", label: "About" },
-  { id: "experience", label: "Experience" },
-  { id: "projects", label: "Projects" },
-  { id: "contact", label: "Contact" },
-];
-
-export default function PageNav({ activePanel, onSelect }: PageNavProps) {
+export default function PageNav({ activeSection }: PageNavProps) {
   return (
     <nav className="page-nav">
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.id}
-          className={`page-nav__button ${
-            activePanel === item.id ? "page-nav__button--active" : ""
-          }`}
-          onClick={() => onSelect(activePanel === item.id ? null : item.id)}
-        >
-          {item.label}
-        </button>
-      ))}
+      {NAV_ROUTES.map((route) => {
+        const isActive = activeSection === route.section;
+
+        return (
+          <Link
+            key={route.section}
+            // Clicking the open section closes it, same as the old toggle
+            // — it just navigates home instead of clearing a state field.
+            to={isActive ? "/" : route.path}
+            className={`page-nav__button ${
+              isActive ? "page-nav__button--active" : ""
+            }`}
+            // A real <a> rather than a <button>: middle-click, cmd-click
+            // and "copy link address" all work, and a screen reader
+            // announces it as navigation, which is what it now is.
+            aria-current={isActive ? "page" : undefined}
+          >
+            {route.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

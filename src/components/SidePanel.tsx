@@ -1,13 +1,19 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { CONTACT, EXPERIENCE, PROJECTS } from "../data/portfolio";
+import type { SectionId } from "../data/navigation";
+import {
+  CONTACT,
+  EXPERIENCE,
+  PROFILE,
+  PROJECTS,
+  SKILLS,
+} from "../data/portfolio";
 import "./SidePanel.css";
 
-export type PanelId =
-  | "about"
-  | "experience"
-  | "projects"
-  | "contact"
-  | null;
+/**
+ * Sections come from the route table now — the panel shows whatever the
+ * URL says. Null is the extra case routing doesn't have: "closed".
+ */
+export type PanelId = SectionId | null;
 
 interface SidePanelProps {
   activePanel: PanelId;
@@ -29,6 +35,31 @@ function TagRow({ tags }: { tags: string[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function AboutSection() {
+  return (
+    <>
+      {/* The name itself is the 3D title filling the scene behind this
+          panel, so repeating it here would be the third time it appears
+          on screen. Role and location are the parts that aren't already
+          said. */}
+      <p className="about__role">{PROFILE.title}</p>
+      <p className="about__location">{PROFILE.location}</p>
+      <p className="panel-blurb">{PROFILE.bio}</p>
+
+      <div className="skills">
+        {SKILLS.map((group) => (
+          <section key={group.group} className="skills__group">
+            <h3 className="skills__heading">{group.group}</h3>
+            {/* Same pill treatment as the experience and project tags —
+                one visual language for "a list of technologies". */}
+            <TagRow tags={group.items} />
+          </section>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -138,17 +169,7 @@ const PANEL_CONTENT: Record<
   Exclude<PanelId, null>,
   { title: string; body: ReactNode }
 > = {
-  about: {
-    title: "About",
-    body: (
-      <p>
-        {/* TODO: replace with your real bio */}
-        Placeholder bio — React/frontend developer building this scene to
-        learn React Three Fiber, Redux Toolkit, and the imperative/declarative
-        bridge between React and Three.js.
-      </p>
-    ),
-  },
+  about: { title: "About", body: <AboutSection /> },
   experience: { title: "Experience", body: <ExperienceList /> },
   projects: { title: "Projects", body: <ProjectList /> },
   contact: { title: "Contact", body: <ContactList /> },
