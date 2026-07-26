@@ -50,7 +50,8 @@ export default function Scene3D({ station }: Scene3DProps) {
   const isLightsOn = useAppSelector((state) => state.scene.lightsOn);
   const moodImpacts = useAppSelector((state) => state.scene.moodImpacts);
   const dispatch = useAppDispatch();
-  const { camera, parallax, lights, title, physics } = useSceneControls();
+  const { camera, parallax, responsive, lights, title, physics } =
+    useSceneControls();
 
   const [fallenLetters, setFallenLetters] = useState<FallenLetter[]>([]);
   const [isReturning, setIsReturning] = useState(false);
@@ -177,6 +178,8 @@ export default function Scene3D({ station }: Scene3DProps) {
           fov={station.fov}
           strength={parallax.strength}
           damping={parallax.damping}
+          designAspect={responsive.designAspect}
+          maxPullback={responsive.maxPullback}
           traumaRef={traumaRef}
         />
         <color attach="background" args={[lights.background]} />

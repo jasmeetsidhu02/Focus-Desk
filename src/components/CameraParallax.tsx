@@ -22,6 +22,9 @@ const FREQ_X = 43;
 const FREQ_Y = 57;
 const FREQ_ROLL = 31;
 
+const clamp = (n: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, n));
+
 interface CameraParallaxProps {
   // The camera's resting position — the parallax offsets from here rather
   // than accumulating, so this can be changed live (by the debug panel)
@@ -34,6 +37,17 @@ interface CameraParallaxProps {
   // How quickly the camera eases toward its target each frame — smaller is
   // smoother/slower, closer to 1 is snappier.
   damping: number;
+  /**
+   * The window shape the scene's framing was tuned at. Anything narrower
+   * than this gets the camera pulled back to compensate.
+   */
+  designAspect: number;
+  /**
+   * Ceiling on that pullback. Without one, a portrait phone (aspect ~0.46)
+   * would ask for a 3.5x retreat and end up viewing the room from across
+   * the street.
+   */
+  maxPullback: number;
   /**
    * Shared 0–1 "trauma" value. Impacts add to it; this component is the
    * only thing that subtracts from it.
@@ -53,6 +67,8 @@ export default function CameraParallax({
   fov,
   strength,
   damping,
+  designAspect,
+  maxPullback,
   traumaRef,
 }: CameraParallaxProps) {
   const { camera, pointer } = useThree();
@@ -101,6 +117,7 @@ export default function CameraParallax({
     }
     const base = eased.current;
     const aim = easedLookAt.current;
+    const perspective = camera as PerspectiveCamera;
 
     // `damping` is a fraction-per-frame, so using it raw would make the
     // easing twice as fast on a 120Hz display as on a 60Hz one — and a
@@ -111,14 +128,32 @@ export default function CameraParallax({
 
     const targetX = basePosition[0] + pointer.x * strength;
 
+    /**
+     * A perspective camera's `fov` is *vertical*, so a portrait window
+     * doesn't just crop the sides — it keeps the same vertical span and
+     * throws away horizontal view. On a phone the room and the name run
+     * off both edges of the screen.
+     *
+     * Retreating along the view axis is the fix rather than widening fov:
+     * a fov wide enough to reclaim that much horizontal view (~105° on a
+     * phone) distorts everything at the edges into a fisheye. Moving back
+     * keeps the lens honest and just frames more of the room.
+     *
+     * Scaled away from `lookAt` rather than along -Z, so the camera keeps
+     * aiming at exactly the same point however far back it goes.
+     */
+    const pullback = clamp(designAspect / perspective.aspect, 1, maxPullback);
+
+    base.x += (lookAt[0] + (targetX - lookAt[0]) * pullback - base.x) * t;
     // Lerp toward the target each frame instead of snapping straight to
     // it — this is what makes the movement feel like an eased drift
     // rather than the camera rigidly tracking the cursor. It doubles as
     // the route transition: nothing animates the camera between stations
     // explicitly, the target simply moves and this chases it.
-    base.x += (targetX - base.x) * t;
-    base.y += (basePosition[1] - base.y) * t;
-    base.z += (basePosition[2] - base.z) * t;
+    base.y +=
+      (lookAt[1] + (basePosition[1] - lookAt[1]) * pullback - base.y) * t;
+    base.z +=
+      (lookAt[2] + (basePosition[2] - lookAt[2]) * pullback - base.z) * t;
 
     aim.x += (lookAt[0] - aim.x) * t;
     aim.y += (lookAt[1] - aim.y) * t;
@@ -148,7 +183,6 @@ export default function CameraParallax({
 
     easedFov.current += (fov - easedFov.current) * t;
 
-    const perspective = camera as PerspectiveCamera;
     // Skip the last hundredth of a degree: the lerp is asymptotic and
     // would otherwise rebuild the projection matrix forever chasing a
     // difference nobody can see.

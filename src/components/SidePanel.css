@@ -476,3 +476,66 @@
 .side-panel__body a:hover {
   text-decoration-color: currentColor;
 }
+
+/* --- Phones ------------------------------------------------------------
+   Deliberately last in the file. A media query adds no specificity, so
+   these would lose to the identical base selectors above if they sat
+   anywhere earlier — source order is the only thing separating them. */
+
+@media (max-width: 620px) {
+  /* Full screen rather than 92vw: the 8% sliver of scene showing down one
+     edge read as a mistake rather than a peek. */
+  .side-panel {
+    width: 100%;
+    padding: 22px 20px 0;
+    gap: 16px;
+  }
+
+  .side-panel__title {
+    font-size: 23px;
+  }
+
+  /* 34px is under the ~44px comfortable-touch minimum, and on a
+     full-screen panel this is the only way out. */
+  .side-panel__close {
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+  }
+
+  .side-panel__body {
+    /* The nav bar floats *over* the panel (z-index 30 vs 20) so sections
+       stay one tap apart on mobile. The panel has to leave room for it,
+       or the last entry ends up underneath. */
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+
+    /* Fade text out before it reaches the nav rather than at the panel's
+       bottom edge, so nothing is left half-visible behind the bar. */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 12px,
+      #000 calc(100% - 104px),
+      transparent calc(100% - 74px)
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 12px,
+      #000 calc(100% - 104px),
+      transparent calc(100% - 74px)
+    );
+  }
+
+  /* Label above value instead of beside it — a 66px fixed label column
+     left too little room for an email address on a 375px screen. */
+  .side-panel__body .contact-list__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .contact-list__label {
+    flex: none;
+  }
+}

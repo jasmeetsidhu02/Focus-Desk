@@ -3,7 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the page draw under the notch and home
+         indicator, which is what makes env(safe-area-inset-*) resolve to
+         anything other than 0 in the CSS. Zoom is deliberately not
+         disabled — pinch-zoom is an accessibility feature. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>focus-desk</title>
   </head>
   <body>

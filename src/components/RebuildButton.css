@@ -14,3 +14,12 @@
   pointer-events: none;
   user-select: none;
 }
+
+/* Same reasoning as .name-hint: distanceFactor scales this with the
+   camera, and the camera retreats on narrow screens. */
+@media (max-width: 620px) {
+  .rebuild-tooltip {
+    font-size: 19px;
+    padding: 10px 20px;
+  }
+}

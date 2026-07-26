@@ -73,6 +73,17 @@ export interface LetterSlot {
   x: number;
 }
 
+interface NameLayout {
+  slots: LetterSlot[];
+  /**
+   * Where the name ends, in the title group's local space. Falls out of
+   * the same pass that positions the glyphs — anything that wants to sit
+   * after the name needs it, and re-measuring separately would be a
+   * second copy of the advance maths to keep in sync.
+   */
+  width: number;
+}
+
 /**
  * Lays out one Text3D mesh per character.
  *
@@ -82,7 +93,7 @@ export interface LetterSlot {
  * glyph in font units, which scales to world units by `ha / resolution *
  * size` — the same maths Text3D does internally.
  */
-function computeLayout(font: Font, text: string, size: number): LetterSlot[] {
+function computeLayout(font: Font, text: string, size: number): NameLayout {
   const { glyphs, resolution } = font.data;
   const slots: LetterSlot[] = [];
   let x = 0;
@@ -98,7 +109,9 @@ function computeLayout(font: Font, text: string, size: number): LetterSlot[] {
     x += advance + NAME_LETTER_SPACING * size;
   }
 
-  return slots;
+  // The loop adds letter-spacing after every glyph including the last;
+  // that trailing gap isn't part of the name's width.
+  return { slots, width: x - NAME_LETTER_SPACING * size };
 }
 
 interface NameTitleProps {
@@ -142,7 +155,7 @@ export default function NameTitle({
   const prefersReducedMotion = usePrefersReducedMotion();
   const font = useFont(FONT_PATH);
 
-  const slots = useMemo(
+  const { slots, width: nameWidth } = useMemo(
     () => computeLayout(font, NAME_TEXT, nameSize),
     [font, nameSize],
   );
@@ -279,8 +292,17 @@ export default function NameTitle({
           );
         })}
 
+        {/* Parked after the last letter rather than before the first, so
+            it reads as the end of the name rather than a bullet in front
+            of it. `buttonOffset` is now the gap from the name's end, not
+            an absolute position — which means it stays put when the name
+            or nameSize changes instead of needing re-tuning. */}
         <RebuildButton
-          position={buttonOffset}
+          position={[
+            nameWidth + buttonOffset[0],
+            buttonOffset[1],
+            buttonOffset[2],
+          ]}
           visible={fallenIds.length > 0}
           onClick={onRebuild}
         />

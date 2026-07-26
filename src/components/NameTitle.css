@@ -47,6 +47,16 @@
   }
 }
 
+/* This label is scaled by distance (drei's distanceFactor), so pulling the
+   camera back on a narrow screen shrinks it along with the room. Sized up
+   here so it lands back at a legible size once that pullback applies. */
+@media (max-width: 620px) {
+  .name-hint {
+    font-size: 19px;
+    letter-spacing: 0.04em;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .name-hint {
     animation: none;

@@ -31,6 +31,18 @@ export function useSceneControls() {
     damping: { value: 0.05, min: 0.005, max: 0.5, step: 0.005 },
   });
 
+  // Keeps the framing usable on narrow windows and phones. Drag the
+  // browser window narrow to see these work without a device — the
+  // pullback is driven by aspect ratio, not by a media query.
+  const responsive = useControls("Responsive", {
+    // The window shape everything above was tuned at. Anything narrower
+    // pulls the camera back; anything wider is left alone.
+    designAspect: { value: 1.6, min: 0.5, max: 3, step: 0.05 },
+    // Ceiling on that retreat. A portrait phone would otherwise ask for
+    // ~3.5x and end up viewing the room from across the street.
+    maxPullback: { value: 2.1, min: 1, max: 4, step: 0.05 },
+  });
+
   const lights = useControls("Lights", {
     background: "rgb(16, 15, 16)",
     hemiIntensity: { value: 1.1, min: 0, max: 5, step: 0.05 },
@@ -47,8 +59,12 @@ export function useSceneControls() {
     subtitleSize: { value: 0.13, min: 0.02, max: 1, step: 0.01 },
     floatAmount: { value: 0.025, min: 0, max: 0.3, step: 0.005 },
     floatSpeed: { value: 0.7, min: 0, max: 4, step: 0.05 },
-    // Where the ↻ rebuild button sits, relative to the title's origin.
-    buttonOffset: { value: { x: -0.28, y: -0.12, z: 0 }, step: 0.02 },
+    // Where the ↻ rebuild button sits, measured from the *end* of the
+    // name rather than the title's origin — so it stays glued to the last
+    // letter however long the name is or how nameSize changes.
+    // x is the gap after that letter; y is roughly half a cap height, to
+    // centre it against the letters rather than the baseline.
+    buttonOffset: { value: { x: 0.0, y: 0.88, z: 0 }, step: 0.02 },
   });
 
   const physics = useControls("Physics", {
@@ -69,6 +85,7 @@ export function useSceneControls() {
       fov: camera.fov,
     },
     parallax,
+    responsive,
     lights: {
       ...lights,
       sunPosition: toTuple(lights.sunPosition),

@@ -91,6 +91,36 @@
   }
 }
 
+/* Phones: a full-width bar rather than a left-hugging dock.
+   Wrapping was the real problem — four items don't fit across 375px, and
+   a second row inside a 999px-radius pill looks broken. Equal flex
+   columns keep it to one line at any width. */
+@media (max-width: 620px) {
+  .page-nav {
+    left: 10px;
+    right: 10px;
+    /* Clears the iPhone home indicator. Falls back to 0 on anything that
+       doesn't report an inset, so it's safe everywhere. */
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  .page-nav__button {
+    flex: 1 1 0;
+    /* Long labels ("Experience") must shrink rather than force the bar
+       wider than the screen. */
+    min-width: 0;
+    text-align: center;
+    /* ~44px tall including the dock's own padding — the minimum
+       comfortable touch target. */
+    padding: 12px 4px;
+    font-size: 12.5px;
+    letter-spacing: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-nav {
     animation: none;
