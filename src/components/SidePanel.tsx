@@ -65,13 +65,27 @@ function ProjectList() {
     <ol className="entry-list">
       {PROJECTS.map((project) => (
         <li key={project.id} className="entry">
-          <h3 className="entry__title">{project.title}</h3>
+          {project.status && (
+            <span className="entry__period entry__period--current">
+              {project.status}
+            </span>
+          )}
+          <h3 className="entry__title">
+            {project.title}
+            {project.kind && (
+              <span className="entry__kind"> — {project.kind}</span>
+            )}
+          </h3>
           <p className="entry__meta">{project.description}</p>
-          <ul className="entry__points">
-            {project.highlights.map((highlight) => (
-              <li key={highlight}>{highlight}</li>
-            ))}
-          </ul>
+          {/* Not every project has bullets (Sixthhive is a one-liner), and
+              an empty <ul> would still take up its margin. */}
+          {project.highlights.length > 0 && (
+            <ul className="entry__points">
+              {project.highlights.map((highlight) => (
+                <li key={highlight}>{highlight}</li>
+              ))}
+            </ul>
+          )}
           <TagRow tags={project.tags} />
           {project.liveUrl && (
             <a
@@ -83,7 +97,7 @@ function ProjectList() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Visit site ↗
+              {project.linkLabel ?? "Visit site"} ↗
             </a>
           )}
         </li>

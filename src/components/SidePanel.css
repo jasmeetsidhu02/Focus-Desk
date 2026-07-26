@@ -166,6 +166,14 @@
   color: #f4f2f6;
 }
 
+/* The qualifier after a project's name — de-emphasised so the title still
+   reads as the title, not as one long run-on heading. */
+.entry__kind {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(235, 232, 238, 0.42);
+}
+
 .entry__meta {
   margin: 0;
   font-size: 13.5px;
