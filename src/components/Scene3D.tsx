@@ -1,62 +1,70 @@
-import { OrbitControls } from "@react-three/drei";
+import { Loader } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { SCENE_OBJECT_IDS, sceneObjects } from "../data/objects";
-import DeskObject from "./DeskObject";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { setHovered, setSelected } from "../store/sceneSlice";
+import { Suspense } from "react";
+import { ASSET_PATHS } from "../data/assets";
+import CameraParallax from "./CameraParallax";
+import OfficeModel from "./OfficeModel";
+import { useAppSelector } from "../store/hooks";
 
-// Looked up once at module load, not per-render — same reasoning as the
-// SCENE_OBJECT_IDS lesson: derive from the single source of truth (the
-// data file) instead of re-typing the lamp's position as magic numbers here.
-const lampObject = sceneObjects.find(
-  (object) => object.id === SCENE_OBJECT_IDS.LAMP,
-)!;
+// OrbitControls let the user find a good view by dragging; without it,
+// <Canvas> needs an explicit starting camera position/angle instead of
+// relying on the implicit default (which is just [0, 0, 5] — far too
+// close for a ~34-unit room). Needs eyeballing/adjusting once rendered.
+const CAMERA_POSITION: [number, number, number] = [-3, 3, 6];
+const CAMERA_FOV = 45;
 
-const BACKGROUND_LIGHTS_ON = "#2b2032";
+const BACKGROUND_LIGHTS_ON = "rgb(16, 15, 16)";
 const BACKGROUND_LIGHTS_OFF = "#100e14";
-const AMBIENT_INTENSITY_ON = 0.35;
-const AMBIENT_INTENSITY_OFF = 0.08;
-const LAMP_LIGHT_COLOR = "#d8a13a"; // same amber as the lamp mesh itself
 
-function Lamp() {
-  const isLightsOn = useAppSelector((state) => state.scene.lightsOn);
+// Hemisphere light = a sky color blended toward a ground color, better
+// as a room's base fill than a single flat ambientLight since it adds
+// natural top/bottom color variation instead of lighting every surface
+// identically regardless of orientation.
+const HEMI_SKY_COLOR = "#fff1d6";
+const HEMI_GROUND_COLOR = "#140f1a";
+const HEMI_INTENSITY_ON = 1.1;
+const HEMI_INTENSITY_OFF = 0.15;
 
-  if (!isLightsOn) return null;
+// A directional light is what actually gives PBR materials shape —
+// hemisphere/ambient alone has no direction, so surfaces read flat with
+// no shading contrast. This stands in for a window/room light.
+const SUN_INTENSITY_ON = 2.4;
+const SUN_INTENSITY_OFF = 0.2;
 
-  const [x, y, z] = lampObject.position;
-
-  return (
-    <pointLight
-      position={[x, y + 0.5, z]}
-      color={LAMP_LIGHT_COLOR}
-      intensity={15}
-    />
-  );
-}
+const DARK_MODEL_PATHS = [
+  ASSET_PATHS.DARK_FIRST,
+  ASSET_PATHS.DARK_SECOND,
+  ASSET_PATHS.DARK_THIRD,
+  ASSET_PATHS.DARK_FOURTH,
+];
 
 export default function Scene3D() {
   const isLightsOn = useAppSelector((state) => state.scene.lightsOn);
-  const dispatch = useAppDispatch();
-
-  const onPointerMissed = () => {
-    dispatch(setSelected(null));
-    dispatch(setHovered(null));
-  };
 
   return (
-    <Canvas onPointerMissed={onPointerMissed}>
-      <OrbitControls></OrbitControls>
-      <color
-        attach="background"
-        args={[isLightsOn ? BACKGROUND_LIGHTS_ON : BACKGROUND_LIGHTS_OFF]}
-      />
-      <ambientLight
-        intensity={isLightsOn ? AMBIENT_INTENSITY_ON : AMBIENT_INTENSITY_OFF}
-      />
-      <Lamp />
-      {sceneObjects.map((object) => (
-        <DeskObject key={object.id} data={object} />
-      ))}
-    </Canvas>
+    <>
+      <Canvas camera={{ position: CAMERA_POSITION, fov: CAMERA_FOV }}>
+        <CameraParallax />
+        <color
+          attach="background"
+          args={[isLightsOn ? BACKGROUND_LIGHTS_ON : BACKGROUND_LIGHTS_OFF]}
+        />
+        <hemisphereLight
+          color={HEMI_SKY_COLOR}
+          groundColor={HEMI_GROUND_COLOR}
+          intensity={isLightsOn ? HEMI_INTENSITY_ON : HEMI_INTENSITY_OFF}
+        />
+        <directionalLight
+          position={[5, 8, 5]}
+          intensity={isLightsOn ? SUN_INTENSITY_ON : SUN_INTENSITY_OFF}
+        />
+        <Suspense fallback={null}>
+          {DARK_MODEL_PATHS.map((path) => (
+            <OfficeModel key={path} path={path} position={[0, 0, 0]} />
+          ))}
+        </Suspense>
+      </Canvas>
+      <Loader />
+    </>
   );
 }
