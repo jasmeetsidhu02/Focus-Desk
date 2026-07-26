@@ -4,24 +4,40 @@
   right: 0;
   z-index: 20;
   box-sizing: border-box;
-  width: min(380px, 92vw);
+  width: min(400px, 92vw);
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 32px 30px;
+  gap: 22px;
+  padding: 30px 30px 0;
 
   /* Matches the scene background (rgb(16, 15, 16)), lifted slightly so the
      panel reads as a separate surface rather than a hole in the page. */
-  background: rgba(22, 21, 24, 0.94);
-  backdrop-filter: blur(12px);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 19, 22, 0.93);
+  backdrop-filter: blur(16px) saturate(1.2);
   color: rgba(235, 232, 238, 0.72);
-  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.55);
+  box-shadow: -28px 0 70px rgba(0, 0, 0, 0.6);
 
   transform: translateX(100%);
   transition: transform var(--panel-transition, 350ms)
     cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The left edge, as a gradient rather than a flat border — it glows in the
+   accent where the content is and fades out at the extremes, so the panel
+   looks lit by the room instead of cut out of it. */
+.side-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02),
+    rgba(185, 166, 255, 0.45) 22%,
+    rgba(185, 166, 255, 0.12) 70%,
+    rgba(255, 255, 255, 0.02)
+  );
 }
 
 .side-panel--open {
@@ -34,28 +50,71 @@
   }
 }
 
-.side-panel__close {
-  align-self: flex-end;
-  border: none;
-  background: none;
-  color: rgba(235, 232, 238, 0.55);
-  font-size: 26px;
-  line-height: 1;
-  padding: 2px 6px;
-  cursor: pointer;
-  transition: color 0.2s;
+.side-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  /* Sits above the body's mask so content scrolls *under* the heading
+     rather than colliding with it. */
+  position: relative;
+  z-index: 1;
 }
 
-.side-panel__close:hover {
-  color: #fff;
+.side-panel__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* A section number gives the panel a sense of place — "you are on 2 of 4"
+   — which a bare heading doesn't. Monospace so the digits stay aligned
+   between sections. */
+.side-panel__index {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(185, 166, 255, 0.75);
 }
 
 .side-panel__title {
   margin: 0;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 500;
   letter-spacing: -0.02em;
+  line-height: 1.1;
   color: #f4f2f6;
+}
+
+.side-panel__close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(235, 232, 238, 0.55);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.side-panel__close:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #f4f2f6;
+}
+
+.side-panel__close:focus-visible {
+  outline: 2px solid rgba(185, 166, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .side-panel__body {
@@ -72,10 +131,71 @@
 
   /* Room for the scrollbar so text doesn't sit under it, and a little
      bottom padding so the last entry doesn't butt against the edge. */
-  padding-right: 6px;
-  padding-bottom: 28px;
+  padding-right: 8px;
+  padding-bottom: 40px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+
+  /* Dissolves the first and last few pixels so scrolling content fades
+     out at both ends instead of being guillotined by the panel edge. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 40px),
+    transparent
+  );
+}
+
+/* Firefox gets the two properties above; WebKit needs the pseudo-elements.
+   Both are set so the scrollbar matches the panel in either engine. */
+.side-panel__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-panel__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-panel__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+
+.side-panel__body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* Content arrives just after the panel itself, so you read the heading
+   before the body settles rather than everything sliding in as one slab.
+   `both` holds the from-state through the delay — without it the content
+   would flash at full opacity before the animation started. */
+.side-panel--open .side-panel__body {
+  animation: panel-body-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+}
+
+@keyframes panel-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel--open .side-panel__body {
+    animation: none;
+  }
 }
 
 .side-panel__body ul {

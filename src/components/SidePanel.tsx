@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import type { SectionId } from "../data/navigation";
+import { NAV_ROUTES, type SectionId } from "../data/navigation";
 import {
   CONTACT,
   EXPERIENCE,
@@ -206,6 +206,13 @@ export default function SidePanel({ activePanel, onClose }: SidePanelProps) {
 
   const content = displayedPanel ? PANEL_CONTENT[displayedPanel] : null;
 
+  // Keyed off the *displayed* panel, not the requested one, so the number
+  // stays with its own heading through the close→reopen handoff instead of
+  // flicking to the incoming section a beat early.
+  const sectionIndex = NAV_ROUTES.findIndex(
+    (route) => route.section === displayedPanel,
+  );
+
   return (
     <aside
       className={`side-panel ${isOpen ? "side-panel--open" : ""}`}
@@ -214,14 +221,23 @@ export default function SidePanel({ activePanel, onClose }: SidePanelProps) {
       }
       aria-hidden={!isOpen}
     >
-      <button
-        className="side-panel__close"
-        onClick={onClose}
-        aria-label="Close"
-      >
-        ×
-      </button>
-      <h2 className="side-panel__title">{content?.title}</h2>
+      <header className="side-panel__header">
+        <div className="side-panel__heading">
+          {/* Reads off the same route table the nav does, so the numbering
+              can never disagree with the order of the buttons. */}
+          <span className="side-panel__index">
+            {String(sectionIndex + 1).padStart(2, "0")}
+          </span>
+          <h2 className="side-panel__title">{content?.title}</h2>
+        </div>
+        <button
+          className="side-panel__close"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </header>
       <div className="side-panel__body">{content?.body}</div>
     </aside>
   );

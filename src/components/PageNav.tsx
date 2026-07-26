@@ -8,7 +8,7 @@ interface PageNavProps {
 
 export default function PageNav({ activeSection }: PageNavProps) {
   return (
-    <nav className="page-nav">
+    <nav className="page-nav" aria-label="Sections">
       {NAV_ROUTES.map((route) => {
         const isActive = activeSection === route.section;
 

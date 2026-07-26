@@ -5,11 +5,13 @@ import PageNav from "./components/PageNav";
 import Scene3D from "./components/Scene3D";
 import SidePanel from "./components/SidePanel";
 import { sectionForPath, stationForPath } from "./data/navigation";
+import { useSceneReady } from "./hooks/useSceneReady";
 import "./App.css";
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const sceneReady = useSceneReady();
 
   /**
    * The URL is the state now — there's no `activePanel` useState any more.
@@ -40,7 +42,14 @@ function App() {
           it's chrome sitting *over* the scene, so it shouldn't be blurred
           along with it when a panel opens. */}
       {/* <MoodMeter /> */}
-      <PageNav activeSection={section} />
+
+      {/* Held back until the room has loaded. drei's <Loader /> renders
+          *inside* .scene-layer, and `position: fixed` makes that wrapper
+          its own stacking context — so the loader's z-index: 1000 is
+          trapped in there and this nav's z-index: 30 paints straight over
+          it. Gating on load is the fix; raising the loader's z-index
+          wouldn't help, because the two aren't being compared. */}
+      {sceneReady && <PageNav activeSection={section} />}
 
       {/* Note this isn't route-switched either. SidePanel animates itself
           shut over ~1s and needs to stay mounted (with its old content)
