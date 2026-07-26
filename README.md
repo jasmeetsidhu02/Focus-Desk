@@ -1,75 +1,43 @@
-# React + TypeScript + Vite
+# Focus Desk
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive 3D desk scene built with React, TypeScript, and Three.js. Click around the desk — laptop, coffee mug, plant, notebook, and lamp — to see details about each one. The lamp doubles as a light switch for the whole scene.
 
-Currently, two official plugins are available:
+**Live demo:** [jasmeetdesk.netlify.app](https://jasmeetdesk.netlify.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Hover any object to highlight it, click to open a sliding info panel with details
+- Click the desk lamp to toggle the scene between a lit and a dark, moody state — ambient light, a point light at the lamp, and the background color all shift together
+- Orbit controls to look around the scene
+- Click empty space (or the panel's close button) to dismiss the info panel
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the ESLint configuration
+- **React 19 + TypeScript** — component structure, hooks, typed state
+- **Vite** — dev server and build tooling
+- **Three.js + [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber)** — declarative Three.js scene, driven by JSX instead of imperative scene/renderer setup
+- **[@react-three/drei](https://github.com/pmndrs/drei)** — `OrbitControls`
+- **Redux Toolkit + react-redux** — global state (`hoveredId`, `selectedId`, `lightsOn`) via a single slice, with typed `useAppSelector`/`useAppDispatch` hooks
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Why it's built this way
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Scene objects (position, geometry, color, label, description) are static data (`src/data/objects.ts`), not React state — they never change at runtime, so there's no reason to put them in a store. Actual state is limited to the three values that genuinely change: which object is hovered, which is selected, and whether the lights are on.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Interaction is handled through R3F's pointer events (`onPointerOver`/`onPointerOut`/`onClick`) directly on each mesh, which dispatch Redux actions — no manual `THREE.Raycaster` wiring needed, since R3F's reconciler does that internally and exposes the result as ordinary-looking event props.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Running locally
 
+```bash
+git clone https://github.com/jasmeetsidhu02/Focus-Desk.git
+cd Focus-Desk
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Other scripts:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run build    # type-check + production build
+npm run lint      # eslint
+npm run preview   # preview the production build locally
 ```
