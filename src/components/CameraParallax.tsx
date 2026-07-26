@@ -1,22 +1,28 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { useRef } from "react";
-import { Vector3 } from "three";
+import type { PerspectiveCamera } from "three";
 
-// Fixed point the camera always looks at — the room's rough center.
-const LOOK_AT_TARGET = new Vector3(0, 1, 0);
-// How far (in scene units) the camera shifts at pointer.x = ±1 (the edges
-// of the canvas). Tune by eye.
-const PARALLAX_STRENGTH = 2;
-// How quickly the camera eases toward its target position each frame —
-// smaller = smoother/slower, closer to 1 = snappier/more immediate.
-const DAMPING = 0.05;
+interface CameraParallaxProps {
+  // The camera's resting position — the parallax offsets from here rather
+  // than accumulating, so this can be changed live (by the debug panel)
+  // without the camera drifting.
+  basePosition: [number, number, number];
+  lookAt: [number, number, number];
+  fov: number;
+  // How far (in scene units) the camera shifts at the edges of the canvas.
+  strength: number;
+  // How quickly the camera eases toward its target each frame — smaller is
+  // smoother/slower, closer to 1 is snappier.
+  damping: number;
+}
 
-export default function CameraParallax() {
+export default function CameraParallax({
+  basePosition,
+  lookAt,
+  fov,
+  strength,
+  damping,
+}: CameraParallaxProps) {
   const { camera, pointer } = useThree();
-  // The camera's starting position, captured once on first frame rather
-  // than hardcoded — so this works whatever position/fov <Canvas> is
-  // actually given, without this component needing to know that value.
-  const basePosition = useRef<Vector3 | null>(null);
 
   // Mutating `camera` directly inside useFrame is the standard R3F
   // pattern for per-frame updates (avoids a React re-render every
@@ -27,16 +33,25 @@ export default function CameraParallax() {
   // whole call, not just the lines inside it.
   /* eslint-disable react-hooks/immutability */
   useFrame(() => {
-    if (!basePosition.current) {
-      basePosition.current = camera.position.clone();
-    }
+    const targetX = basePosition[0] + pointer.x * strength;
 
-    const targetX = basePosition.current.x + pointer.x * PARALLAX_STRENGTH;
     // Lerp toward the target each frame instead of snapping straight to
     // it — this is what makes the movement feel like an eased drift
-    // rather than the camera rigidly tracking the cursor.
-    camera.position.x += (targetX - camera.position.x) * DAMPING;
-    camera.lookAt(LOOK_AT_TARGET);
+    // rather than the camera rigidly tracking the cursor. y/z ease too,
+    // so dragging the debug sliders glides instead of jumping.
+    camera.position.x += (targetX - camera.position.x) * damping;
+    camera.position.y += (basePosition[1] - camera.position.y) * damping;
+    camera.position.z += (basePosition[2] - camera.position.z) * damping;
+    camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
+
+    const perspective = camera as PerspectiveCamera;
+    if (perspective.fov !== fov) {
+      perspective.fov = fov;
+      // Projection matrix is derived from fov/aspect/near/far and is only
+      // recomputed on demand, so changing fov alone has no visible effect
+      // until this is called.
+      perspective.updateProjectionMatrix();
+    }
   });
   /* eslint-enable react-hooks/immutability */
 

@@ -1,36 +1,27 @@
+/* This app is a fixed dark 3D scene, so it deliberately does not follow
+   prefers-color-scheme — a light variant would fight the rendered scene
+   behind it rather than complement it. */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
+  --text: rgba(235, 232, 238, 0.72);
+  --text-h: #f4f2f6;
+  --bg: rgb(16, 15, 16);
 
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  color-scheme: light dark;
+  font: 16px/1.5 var(--sans);
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-  }
-}
-
 body {
   margin: 0;
+  overflow: hidden;
 }
 
 #root {
   height: 100svh;
-}
-
-h1 {
-  font-weight: 500;
-  color: var(--text-h);
 }

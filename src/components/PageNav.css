@@ -1,0 +1,42 @@
+.page-nav {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+}
+
+.page-nav__button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(22, 21, 24, 0.7);
+  backdrop-filter: blur(8px);
+  color: rgba(235, 232, 238, 0.72);
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.page-nav__button:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.page-nav__button--active {
+  background: #f4f2f6;
+  border-color: #f4f2f6;
+  color: rgb(16, 15, 16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-nav__button {
+    transition: none;
+  }
+}

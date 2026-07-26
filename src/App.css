@@ -1,0 +1,25 @@
+.scene-layer {
+  position: fixed;
+  inset: 0;
+  transition:
+    filter 0.45s ease,
+    transform 0.45s ease;
+}
+
+/* Driven by whether a panel is *requested*, not by the panel's own
+   open/closed state — so the blur holds steady through the close→reopen
+   handoff when switching sections, instead of flickering off and on. */
+.scene-layer--dimmed {
+  filter: blur(7px) brightness(0.55) saturate(0.9);
+  transform: scale(1.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer {
+    transition: none;
+  }
+
+  .scene-layer--dimmed {
+    transform: none;
+  }
+}

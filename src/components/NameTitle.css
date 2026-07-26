@@ -1,0 +1,59 @@
+.name-hint {
+  white-space: nowrap;
+  color: rgba(235, 232, 238, 0.5);
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  /* Purely a label — it must never intercept a click meant for a letter. */
+  pointer-events: none;
+  user-select: none;
+  animation: name-hint-in 0.7s ease both;
+}
+
+/* A slow pulse, so it reads as an invitation rather than static chrome. */
+.name-hint::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: 6px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(185, 166, 255, 0.65),
+    transparent
+  );
+  animation: name-hint-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes name-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes name-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .name-hint {
+    animation: none;
+  }
+
+  .name-hint::after {
+    animation: none;
+    opacity: 0.6;
+  }
+}

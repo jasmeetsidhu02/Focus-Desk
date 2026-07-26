@@ -1,0 +1,16 @@
+.rebuild-tooltip {
+  white-space: nowrap;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(22, 21, 24, 0.92);
+  backdrop-filter: blur(8px);
+  color: #f4f2f6;
+  font-family: var(--sans);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  /* The tooltip floats above the button it describes — without this it
+     would sit in front of it and eat its own hover. */
+  pointer-events: none;
+  user-select: none;
+}
