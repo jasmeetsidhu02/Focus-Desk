@@ -1,0 +1,105 @@
+.mood-meter {
+  position: fixed;
+  top: 28px;
+  left: 28px;
+  z-index: 30;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(22, 21, 24, 0.7);
+  backdrop-filter: blur(8px);
+
+  /* Hidden until the first letter lands — the meter appearing *is* part of
+     the joke's timing, so it shouldn't be sitting there in advance. */
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  user-select: none;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    box-shadow 0.6s ease;
+}
+
+.mood-meter--active {
+  opacity: 1;
+  transform: translateY(0);
+  /* The glow tracks the tier colour, so the whole pill visibly heats up as
+     the mood escalates rather than only the bar changing. */
+  box-shadow: 0 0 26px -6px var(--mood-color);
+}
+
+.mood-meter__face {
+  font-size: 24px;
+  line-height: 1;
+  animation: mood-face-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mood-meter__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mood-meter__label {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--mood-color);
+  transition: color 0.6s ease;
+}
+
+.mood-meter__track {
+  width: 132px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.mood-meter__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--mood-color);
+  /* Eases toward the new width instead of jumping, so a hit reads as the
+     meter *filling* rather than a value swap. */
+  transition:
+    width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.6s ease;
+}
+
+@keyframes mood-face-pop {
+  0% {
+    transform: scale(0.6) rotate(-12deg);
+  }
+  55% {
+    transform: scale(1.28) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mood-meter {
+    transform: none;
+    transition: opacity 0.4s ease;
+  }
+
+  .mood-meter--active {
+    transform: none;
+  }
+
+  .mood-meter__face {
+    animation: none;
+  }
+
+  .mood-meter__fill {
+    transition: none;
+  }
+}

@@ -9,6 +9,10 @@ import type { Group } from "three";
 import type { FallenLetter } from "../types";
 import { FONT_PATH } from "./NameTitle";
 
+// Below this speed (units/sec) a collision is a letter settling into a pile,
+// not landing — reacting to those would fire a dozen bubbles per drop.
+const MIN_IMPACT_SPEED = 1.2;
+
 // How long a letter takes to fly back to its slot, in seconds.
 const RETURN_DURATION = 0.9;
 // Height of the arc it travels through on the way, so letters lift and
@@ -38,6 +42,16 @@ interface FallenLettersProps {
   /** The title's float group — the letters' slots live in its local space. */
   anchorRef: RefObject<Group | null>;
   onReturnComplete: () => void;
+  /**
+   * Fired once per letter, the first time it hits something hard enough to
+   * count. `speed` is how fast it was travelling on contact, so the caller
+   * can scale the reaction to the severity of the landing.
+   */
+  onImpact: (
+    letter: FallenLetter,
+    position: [number, number, number],
+    speed: number,
+  ) => void;
 }
 
 export default function FallenLetters({
@@ -45,8 +59,13 @@ export default function FallenLetters({
   isReturning,
   anchorRef,
   onReturnComplete,
+  onImpact,
 }: FallenLettersProps) {
   const bodies = useRef(new Map<number, RapierRigidBody>());
+  // Ids that have already had their landing reported. Rapier keeps firing
+  // collision events as a body slides and jostles in the pile; only the
+  // first one is the moment worth reacting to.
+  const impacted = useRef(new Set<number>());
   const startTransforms = useRef<Map<number, StartTransform> | null>(null);
   const elapsed = useRef(0);
   const hasCompleted = useRef(false);
@@ -118,6 +137,32 @@ export default function FallenLetters({
     }
   });
 
+  const handleCollision = (letter: FallenLetter) => () => {
+    // A returning letter is kinematic and being flown through the scene by
+    // hand; brushing past the pile on the way home isn't a landing.
+    if (isReturning) return;
+    if (impacted.current.has(letter.id)) return;
+
+    const body = bodies.current.get(letter.id);
+    if (!body) return;
+
+    // Read the velocity from the body rather than trusting the initial
+    // toss stored on the letter — by now gravity has done most of the work,
+    // and this is the only number that reflects how hard it actually hit.
+    const velocity = body.linvel();
+    const speed = Math.hypot(velocity.x, velocity.y, velocity.z);
+    if (speed < MIN_IMPACT_SPEED) return;
+
+    impacted.current.add(letter.id);
+
+    const translation = body.translation();
+    onImpact(
+      letter,
+      [translation.x, translation.y, translation.z],
+      speed,
+    );
+  };
+
   return (
     <>
       {letters.map((letter) => (
@@ -128,8 +173,18 @@ export default function FallenLetters({
           key={letter.id}
           ref={(body) => {
             if (body) bodies.current.set(letter.id, body);
-            else bodies.current.delete(letter.id);
+            else {
+              bodies.current.delete(letter.id);
+              // Cleared alongside the body, not on the rebuild, so the same
+              // letter knocked over again gets a fresh landing. Ids are
+              // slot indices and therefore reused every time.
+              impacted.current.delete(letter.id);
+            }
           }}
+          // Adding this handler is what makes react-three-rapier turn on
+          // COLLISION_EVENTS for the collider — without a listener the
+          // simulation doesn't bother reporting contacts at all.
+          onCollisionEnter={handleCollision(letter)}
           // Kinematic while returning: gravity and collisions stop applying,
           // so the flight path is driven entirely by the frame loop above
           // instead of fighting the simulation.

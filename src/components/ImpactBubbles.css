@@ -1,0 +1,62 @@
+.impact-bubble {
+  /* Sized in the same units drei's distanceFactor scales, so this reads as
+     a physical object in the room rather than fixed screen furniture. */
+  font-size: 26px;
+  line-height: 1;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(22, 21, 24, 0.82);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+
+  /* Pure decoration sitting in front of clickable letters — it must never
+     swallow a click, and must not be selectable on a drag. */
+  pointer-events: none;
+  user-select: none;
+
+  /* Duration matches BUBBLE_LIFETIME_MS. `forwards` holds the final frame
+     for the sliver of time between the animation ending and React
+     unmounting the node, so it can't flash back to full opacity. */
+  animation: impact-bubble-pop 1200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center bottom;
+}
+
+@keyframes impact-bubble-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.4);
+  }
+  /* Overshoots past 1 and settles back — the squash-and-stretch beat that
+     makes it read as a reaction to a hit rather than a fade-in. */
+  22% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.15);
+  }
+  38% {
+    transform: translateY(-14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-42px) scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .impact-bubble {
+    /* Keep the bubble (it's the feedback), drop the travel — a cross-fade
+       in place, no rise, no overshoot. */
+    animation: impact-bubble-fade 1200ms ease forwards;
+  }
+}
+
+@keyframes impact-bubble-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  15%,
+  70% {
+    opacity: 1;
+  }
+}

@@ -1,5 +1,6 @@
 import { Leva } from "leva";
 import { useState } from "react";
+// import MoodMeter from "./components/MoodMeter";
 import PageNav from "./components/PageNav";
 import Scene3D from "./components/Scene3D";
 import SidePanel, { type PanelId } from "./components/SidePanel";
@@ -21,6 +22,10 @@ function App() {
       >
         <Scene3D />
       </div>
+      {/* Also outside .scene-layer, for the same reason as <Leva> above:
+          it's chrome sitting *over* the scene, so it shouldn't be blurred
+          along with it when a panel opens. */}
+      {/* <MoodMeter /> */}
       <PageNav activePanel={activePanel} onSelect={setActivePanel} />
       <SidePanel
         activePanel={activePanel}

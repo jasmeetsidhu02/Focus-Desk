@@ -33,3 +33,20 @@ export interface FallenLetter {
   linearVelocity: [number, number, number];
   angularVelocity: [number, number, number];
 }
+
+/**
+ * A one-shot emoji reaction, spawned where a letter landed.
+ *
+ * Deliberately *not* in Redux: these are short-lived visual confetti that
+ * exist for about a second and are identified only by a throwaway id.
+ * Redux is for state other parts of the app need to read — the mood counter
+ * qualifies, a list of in-flight emoji does not.
+ */
+export interface ImpactBubble {
+  /** Monotonic, not the letter's id — the same letter can be hit twice
+   *  before the first bubble has expired, and React keys must be unique. */
+  id: number;
+  emoji: string;
+  /** World-space, captured at the moment of the collision. */
+  position: [number, number, number];
+}
