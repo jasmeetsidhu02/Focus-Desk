@@ -31,22 +31,33 @@ export function useSceneControls() {
     damping: { value: 0.05, min: 0.005, max: 0.5, step: 0.005 },
   });
 
-  // Keeps the framing usable on narrow windows and phones. Drag the
-  // browser window narrow to see these work without a device — the
-  // pullback is driven by aspect ratio, not by a media query.
+  // Where the two framings hand over. Driven by aspect ratio, not a media
+  // query — narrow the browser window and the camera walks between the
+  // two shots continuously, no device needed to tune it.
   const responsive = useControls("Responsive", {
-    // The window shape everything above was tuned at. Anything narrower
-    // pulls the camera back; anything wider is left alone.
+    // At or above this, the landscape shot is used unchanged.
     designAspect: { value: 1.6, min: 0.5, max: 3, step: 0.05 },
-    // Ceiling on that retreat. A portrait phone would otherwise ask for
-    // ~3.5x and end up viewing the room from across the street.
-    maxPullback: { value: 2.6, min: 1, max: 4, step: 0.05 },
-    // Slides the whole shot sideways as the window narrows. Negative pans
-    // left, toward the name — which sits entirely left of the point the
-    // camera aims at, and so is the first thing to fall out of frame.
-    // Drag this while the browser is narrow to find the balance between
-    // showing all of the name and keeping the room in shot.
-    aimShiftX: { value: -1.1, min: -4, max: 4, step: 0.05 },
+    // At or below this, the portrait shot is used unchanged. A phone in
+    // portrait is around 0.46.
+    portraitAspect: { value: 0.62, min: 0.2, max: 1.5, step: 0.02 },
+  });
+
+  /**
+   * The portrait shot: the name as the hero, the room behind it as
+   * atmosphere rather than the subject.
+   *
+   * Offsets from the home camera, same convention as the route stations —
+   * so retuning "Camera" above moves this with it instead of desyncing.
+   *
+   * These defaults were derived rather than seen: the name runs from
+   * roughly world x -6 to -2.8 at y ≈ 1.1, so this aims at about its
+   * centre and stands back far enough for a ~0.46-aspect frame to hold
+   * its full width. Expect to drag them.
+   */
+  const portrait = useControls("Portrait Camera", {
+    positionOffset: { value: { x: -3.5, y: 1.9, z: 2.6 }, step: 0.1 },
+    lookAtOffset: { value: { x: -2.5, y: 0.6, z: -0.55 }, step: 0.05 },
+    fov: { value: 45, min: 10, max: 120, step: 1 },
   });
 
   const lights = useControls("Lights", {
@@ -92,6 +103,11 @@ export function useSceneControls() {
     },
     parallax,
     responsive,
+    portrait: {
+      ...portrait,
+      positionOffset: toTuple(portrait.positionOffset),
+      lookAtOffset: toTuple(portrait.lookAtOffset),
+    },
     lights: {
       ...lights,
       sunPosition: toTuple(lights.sunPosition),

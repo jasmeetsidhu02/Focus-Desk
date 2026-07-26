@@ -50,7 +50,7 @@ export default function Scene3D({ station }: Scene3DProps) {
   const isLightsOn = useAppSelector((state) => state.scene.lightsOn);
   const moodImpacts = useAppSelector((state) => state.scene.moodImpacts);
   const dispatch = useAppDispatch();
-  const { camera, parallax, responsive, lights, title, physics } =
+  const { camera, parallax, responsive, portrait, lights, title, physics } =
     useSceneControls();
 
   const [fallenLetters, setFallenLetters] = useState<FallenLetter[]>([]);
@@ -155,6 +155,20 @@ export default function Scene3D({ station }: Scene3DProps) {
     camera.lookAt[2] + station.lookAtOffset[2],
   ];
 
+  // The portrait shot is offset from home too, but deliberately ignores
+  // the route station: on a phone the panel covers the whole screen, so
+  // there's nothing to slide the room out of the way of.
+  const portraitPosition: [number, number, number] = [
+    camera.position[0] + portrait.positionOffset[0],
+    camera.position[1] + portrait.positionOffset[1],
+    camera.position[2] + portrait.positionOffset[2],
+  ];
+  const portraitLookAt: [number, number, number] = [
+    camera.lookAt[0] + portrait.lookAtOffset[0],
+    camera.lookAt[1] + portrait.lookAtOffset[1],
+    camera.lookAt[2] + portrait.lookAtOffset[2],
+  ];
+
   // Once the bodies have flown home, drop them — the title re-renders its
   // own letters back into those slots, already at full opacity since the
   // entrance animation finished long ago.
@@ -178,9 +192,11 @@ export default function Scene3D({ station }: Scene3DProps) {
           fov={station.fov}
           strength={parallax.strength}
           damping={parallax.damping}
+          portraitPosition={portraitPosition}
+          portraitLookAt={portraitLookAt}
+          portraitFov={portrait.fov}
           designAspect={responsive.designAspect}
-          maxPullback={responsive.maxPullback}
-          aimShiftX={responsive.aimShiftX}
+          portraitAspect={responsive.portraitAspect}
           traumaRef={traumaRef}
         />
         <color attach="background" args={[lights.background]} />

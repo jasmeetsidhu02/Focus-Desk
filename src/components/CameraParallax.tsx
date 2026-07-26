@@ -38,26 +38,23 @@ interface CameraParallaxProps {
   // smoother/slower, closer to 1 is snappier.
   damping: number;
   /**
-   * The window shape the scene's framing was tuned at. Anything narrower
-   * than this gets the camera pulled back to compensate.
-   */
-  designAspect: number;
-  /**
-   * Ceiling on that pullback. Without one, a portrait phone (aspect ~0.46)
-   * would ask for a 3.5x retreat and end up viewing the room from across
-   * the street.
-   */
-  maxPullback: number;
-  /**
-   * How far to slide the whole shot sideways per unit of narrowness, in
-   * scene units. Negative pans left.
+   * A second, separately-framed shot for tall windows — aimed at the name
+   * rather than the room.
    *
-   * Retreating on its own doesn't save a narrow screen, because the shot
-   * isn't centred on the composition — it's aimed at the room, and the
-   * name sits entirely to the left of that. Backing up symmetrically just
-   * grows a frame the name is still outside of.
+   * Retreating and panning the landscape shot was the previous approach
+   * and it can't work: the composition is a ~10-unit-wide horizontal band
+   * (name beside room) and a portrait frame is ~7 units wide and very
+   * tall. No amount of scaling or sliding makes a landscape arrangement
+   * sit well in a portrait frame — it needs its own framing, which is
+   * what this is.
    */
-  aimShiftX: number;
+  portraitPosition: [number, number, number];
+  portraitLookAt: [number, number, number];
+  portraitFov: number;
+  /** At or above this aspect, the landscape shot is used unchanged. */
+  designAspect: number;
+  /** At or below this aspect, the portrait shot is used unchanged. */
+  portraitAspect: number;
   /**
    * Shared 0–1 "trauma" value. Impacts add to it; this component is the
    * only thing that subtracts from it.
@@ -77,9 +74,11 @@ export default function CameraParallax({
   fov,
   strength,
   damping,
+  portraitPosition,
+  portraitLookAt,
+  portraitFov,
   designAspect,
-  maxPullback,
-  aimShiftX,
+  portraitAspect,
   traumaRef,
 }: CameraParallaxProps) {
   const { camera, pointer } = useThree();
@@ -137,51 +136,42 @@ export default function CameraParallax({
     // fraction-per-second normalised against 60fps.
     const t = 1 - Math.pow(1 - damping, delta * 60);
 
-    const targetX = basePosition[0] + pointer.x * strength;
-
     /**
-     * A perspective camera's `fov` is *vertical*, so a portrait window
-     * doesn't just crop the sides — it keeps the same vertical span and
-     * throws away horizontal view. On a phone the room and the name run
-     * off both edges of the screen.
+     * 0 on a landscape window, 1 on a portrait one, sliding between them
+     * across the middle.
      *
-     * Retreating along the view axis is the fix rather than widening fov:
-     * a fov wide enough to reclaim that much horizontal view (~105° on a
-     * phone) distorts everything at the edges into a fisheye. Moving back
-     * keeps the lens honest and just frames more of the room.
-     *
-     * Scaled away from `lookAt` rather than along -Z, so the camera keeps
-     * aiming at exactly the same point however far back it goes.
+     * Blending two authored shots rather than deriving one from the other
+     * is the whole idea: each is framed for its own window shape, and
+     * anything in between gets a sensible mix for free. Resizing a
+     * desktop window narrow walks through the transition continuously —
+     * there's no breakpoint to jump at.
      */
-    const pullback = clamp(designAspect / perspective.aspect, 1, maxPullback);
+    const blend = clamp(
+      (designAspect - perspective.aspect) / (designAspect - portraitAspect),
+      0,
+      1,
+    );
+    const mix = (landscape: number, portrait: number) =>
+      landscape + (portrait - landscape) * blend;
 
-    /**
-     * How far past the design shape this window is: 0 when it's wide
-     * enough, growing as it narrows. Drives the sideways pan as well.
-     *
-     * The pan moves the camera *and* the aim point by the same amount —
-     * a lateral dolly, not a swivel. Shifting only the aim would rotate
-     * the shot and change every angle in the composition; moving both
-     * keeps the framing identical and simply slides it across, which is
-     * far easier to reason about and to tune.
-     */
-    const panX = (pullback - 1) * aimShiftX;
+    // Faded out as the shot goes portrait: there's no hovering pointer on
+    // a touch screen, so the parallax has nothing meaningful to track and
+    // only adds drift when the frame is already tight.
+    const parallaxX = pointer.x * strength * (1 - blend);
 
-    base.x +=
-      (lookAt[0] + (targetX - lookAt[0]) * pullback + panX - base.x) * t;
     // Lerp toward the target each frame instead of snapping straight to
     // it — this is what makes the movement feel like an eased drift
     // rather than the camera rigidly tracking the cursor. It doubles as
-    // the route transition: nothing animates the camera between stations
-    // explicitly, the target simply moves and this chases it.
-    base.y +=
-      (lookAt[1] + (basePosition[1] - lookAt[1]) * pullback - base.y) * t;
-    base.z +=
-      (lookAt[2] + (basePosition[2] - lookAt[2]) * pullback - base.z) * t;
+    // both the route transition and the resize transition: nothing
+    // animates the camera explicitly, the target moves and this chases it.
+    base.x +=
+      (mix(basePosition[0], portraitPosition[0]) + parallaxX - base.x) * t;
+    base.y += (mix(basePosition[1], portraitPosition[1]) - base.y) * t;
+    base.z += (mix(basePosition[2], portraitPosition[2]) - base.z) * t;
 
-    aim.x += (lookAt[0] + panX - aim.x) * t;
-    aim.y += (lookAt[1] - aim.y) * t;
-    aim.z += (lookAt[2] - aim.z) * t;
+    aim.x += (mix(lookAt[0], portraitLookAt[0]) - aim.x) * t;
+    aim.y += (mix(lookAt[1], portraitLookAt[1]) - aim.y) * t;
+    aim.z += (mix(lookAt[2], portraitLookAt[2]) - aim.z) * t;
 
     camera.position.copy(base);
     camera.lookAt(aim.x, aim.y, aim.z);
@@ -205,7 +195,7 @@ export default function CameraParallax({
       camera.rotation.z += Math.sin(t * FREQ_ROLL + 0.9) * shake * SHAKE_ROLL;
     }
 
-    easedFov.current += (fov - easedFov.current) * t;
+    easedFov.current += (mix(fov, portraitFov) - easedFov.current) * t;
 
     // Skip the last hundredth of a degree: the lerp is asymptotic and
     // would otherwise rebuild the projection matrix forever chasing a
