@@ -3,7 +3,7 @@
   --text-h: #08060d;
   --bg: #fff;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -27,7 +27,7 @@ body {
 }
 
 #root {
-  min-height: 100svh;
+  height: 100svh;
 }
 
 h1 {

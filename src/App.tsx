@@ -1,5 +1,11 @@
+import Scene3D from "./components/Scene3D";
+
 function App() {
-  return <h1>Hello Desk</h1>
+  return (
+    <>
+      <Scene3D />
+    </>
+  );
 }
 
-export default App
+export default App;
